@@ -1,1 +1,8 @@
 hw3/hw3-main.cpp
+hw1/selfcheck
+hw1/t1.in
+hw1/t2.in
+hw3/.vscode/c_cpp_properties.json
+hw3/parser.tab.hpp
+hw3/parser.tab.cpp
+hw3/output.txt

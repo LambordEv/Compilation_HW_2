@@ -3,6 +3,7 @@
 #include "symbols.hpp"
 #include <sstream>
 
+using std::vector;
 using namespace std;
 extern TableStack tables;
 extern int yylineno;
@@ -303,11 +304,11 @@ Call::Call(Node *terminal, Node *exp) : Node() {
     for (int i = 0; i < symbol->params.size(); i++) {
         if (symbol->params[i] != expression->type) {
             if (symbol->params[i] != "int" || expression->type != "byte") {
-                vector<string> converted_params = vector<string>();
+                /*vector<string> converted_params = vector<string>();
                 for (int j = 0; j < symbol->params.size(); ++j) {
                     converted_params.push_back(convert_to_upper_case(symbol->params[j]));
-                }
-                output::errorPrototypeMismatch(yylineno, name, converted_params);
+                }*/
+                output::errorPrototypeMismatch(yylineno, name, "byte");
                 exit(0);
             }
         }
