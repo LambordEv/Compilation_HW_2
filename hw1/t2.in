@@ -1,7 +1,0 @@
-// Hello world program
-
-int main() {
-	print("Hello world!");
-	print("Nice,\nisn't\nit?");
-	return 0;
-}
