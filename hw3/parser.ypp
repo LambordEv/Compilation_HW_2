@@ -2,9 +2,11 @@
     #include <stdio.h>
     #include <iostream>
     #include "hw3_output.hpp"
-    
+    #include "symbols.hpp"
+
     extern int yylineno;
     extern int yylex();
+    extern TableStack tables;
     int yyerror(const char* message);
 
      using namespace output;
@@ -29,7 +31,7 @@ Program: Statements                                                 {$$ = new Pr
 Statements: Statement                                               {$$ = new Statements(dynamic_cast<Statement*>($1));}
             | Statements Statement                                  {$$ = new Statements(dynamic_cast<Statements*>($1), dynamic_cast<Statement*>($2));}
 
-Statement: LBRACE {tables.push_scope();} Statements {tables.pop_scope();} RBRACE                                 {printProductionRule(4);}
+Statement: LBRACE {tables.push_scope();} Statements {tables.pop_scope();} RBRACE       {}
            | Type ID SC                                             {$$ = new Statement(dynamic_cast<Type*>($1), $2);}
            | Type ID ASSIGN Exp SC                                  {$$ = new Statement(dynamic_cast<Type*>($1), $2, dynamic_cast<Exp*>($4));}
            | ID ASSIGN Exp SC                                       {$$ = new Statement($1, dynamic_cast<Exp*>($3));}
@@ -63,8 +65,11 @@ Exp: LPAREN Exp RPAREN                                              {$$ = new Ex
      | LPAREN Type RPAREN Exp                                       {$$ = new Exp($4, $2);}
 %%
 
+TableStack tables = TableStack();
 int main(){
-        return yyparse();
+        int res = yyparse();
+        tables.check_program();
+        return res;
 }
 
 int yyerror(const char * message){

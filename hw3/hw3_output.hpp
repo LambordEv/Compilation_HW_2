@@ -74,6 +74,17 @@ public:
     virtual ~Type() = default;
 };
 
+class Call : public Node {
+public:
+    string type;
+
+    Call(Node *terminal);
+
+    Call(Node *terminal, Node *exp_list);
+
+    virtual ~Call() = default;
+};
+
 class Statement : public Node {
 public:
     Statement(Node *node);
@@ -84,7 +95,7 @@ public:
 
     Statement(Node *id, Exp *exp);
 
-    Statement( const string name, Exp *exp);
+    Statement(const string name, Exp *exp);
 
     Statement(Exp *exp, bool is_return=false);
 
@@ -102,16 +113,7 @@ public:
     virtual ~Statements() = default;
 };
 
-class Call : public Node {
-public:
-    string type;
 
-    Call(Node *terminal);
-
-    Call(Node *terminal, Node *exp_list);
-
-    virtual ~Call() = default;
-};
 
 
 

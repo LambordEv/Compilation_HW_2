@@ -66,7 +66,7 @@ Program::Program() {
 }
 
 //************STATEMENT****************
-// Statement -> BREAK SC / CONTINUE SC
+// Statement -> BREAK SC or CONTINUE SC
 Statement::Statement(Node *node) {
     if (node->value == "break") {
         if (!tables.check_loop()) {

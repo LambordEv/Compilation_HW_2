@@ -1,8 +1,12 @@
 #include "symbols.hpp"
 #include "hw3_output.hpp"
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 
 extern TableStack tables;
+
 
 void SymbolTable::add_symbol(const Symbol &symbol) {
     symbols.push_back(new Symbol(symbol));
@@ -27,8 +31,6 @@ Symbol *SymbolTable::get_symbol(const string &name) {
     }
     return nullptr;
 }
-
-//**************TABLESTACK*************************
 
 TableStack::TableStack() : table_stack(), offsets() {
     offsets.push_back(0);
@@ -109,6 +111,18 @@ string convert_to_upper_case(const string &str) {
         return "STRING";
 }
 
+std::string concatenateParams(const std::vector<std::string>& params) {
+    std::ostringstream oss;
+    std::copy(params.begin(), params.end(), std::ostream_iterator<std::string>(oss, ", "));
+    std::string result = oss.str();
+    // Remove the trailing comma and space
+    if (!result.empty()) {
+        result.pop_back();
+        result.pop_back();
+    }
+    return result;
+}
+
 void TableStack::pop_scope() {
     SymbolTable *scope = table_stack.back();
     table_stack.pop_back();
@@ -121,8 +135,8 @@ void TableStack::pop_scope() {
             for (int i = 0; i < (*it)->params.size(); ++i) {
                 converted_params.push_back(convert_to_upper_case((*it)->params[i]));
             }
-            output::printID((*it)->name, 0,
-                            output::makeFunctionType(convert_to_upper_case((*it)->type), converted_params));
+            std::string paramsString = concatenateParams(converted_params);
+            output::printID((*it)->name, 0, output::makeFunctionType(convert_to_upper_case((*it)->type), paramsString));
         } else {
             output::printID((*it)->name, (*it)->offset, convert_to_upper_case((*it)->type));
         }
@@ -130,8 +144,6 @@ void TableStack::pop_scope() {
     if(offsets.size() > 0)
         offsets.pop_back();
     delete scope;
-
-
 }
 
 void TableStack::print_scopes() {

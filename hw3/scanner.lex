@@ -2,13 +2,8 @@
 /*Declaration Section*/
 /*------- Include Section -------*/
 #include <stdio.h>
-#include "tokens.hpp"
-
-/*------- Function Declarion Section -------*/
-void printRecognisedToken(const char* whichToken);
-void printCommentToken(void);
-void accumulateStringToken(const char* toAdd, int toAddLen);
-void checkAsciiHexValueRange(char toCheck);
+#include "hw3_output.hpp"
+#include "parser.tab.hpp"\
 
 %}
 
@@ -26,7 +21,8 @@ relop               				       (==|!=|<=|>=|<|>)
 binop               				       (\+|\-|\*|\/)
 id                  				       ({letter}+)(({decimalDigit}|{letter})*)
 num                 				       ((0|([1-9]+{decimalDigit}*))) 
-    
+string                                     (\"([^\n\r\"\\]|\\[rnt"\\])+\")   
+
 %x COMMENT		       
 enterComment        				       "\/\/"
     
@@ -40,106 +36,34 @@ escapeChar                                 "\\"
 twoDigitsHexNum                            (x([0-9a-fA-F]{2}))
     
 %%		       
-"void"               				       printRecognisedToken("VOID");
-"int"                				       printRecognisedToken("INT");
-"byte"               				       printRecognisedToken("BYTE");
-"b"                  				       printRecognisedToken("B");
-"bool"               				       printRecognisedToken("BOOL");
-"and"                				       printRecognisedToken("AND");
-"or"                 				       printRecognisedToken("OR");
-"not"                				       printRecognisedToken("NOT");
-"true"               				       printRecognisedToken("TRUE");
-"false"              				       printRecognisedToken("FALSE");
-"return"             				       printRecognisedToken("RETURN");
-"if"                 				       printRecognisedToken("IF");
-"else"               				       printRecognisedToken("ELSE");
-"while"              				       printRecognisedToken("WHILE");
-"break"              				       printRecognisedToken("BREAK");
-"continue"           				       printRecognisedToken("CONTINUE");
-";"                  				       printRecognisedToken("SC");
-"("                 				       printRecognisedToken("LPAREN");
-")"                 				       printRecognisedToken("RPAREN");
-"{"                 				       printRecognisedToken("LBRACE");
-"}"                 				       printRecognisedToken("RBRACE");
-"="                  				       printRecognisedToken("ASSIGN");
-{relop}              				       printRecognisedToken("RELOP");
-{binop}              				       printRecognisedToken("BINOP");
-{num}                                      printRecognisedToken("NUM");
-{id}                                       printRecognisedToken("ID");
+"void"               				       yylval=new Node(yytext);return VOID;
+"int"                				       yylval=new Node(yytext);return INT;
+"byte"               				       yylval=new Node(yytext);return BYTE;
+"b"                  				       yylval=new Node(yytext);return B;
+"bool"               				       yylval=new Node(yytext);return BOOL;
+"and"                				       yylval=new Node(yytext);return AND;
+"or"                 				       yylval=new Node(yytext);return OR;
+"not"                				       yylval=new Node(yytext);return NOT;
+"true"               				       yylval=new Node(yytext);return TRUE;
+"false"              				       yylval=new Node(yytext);return FALSE;
+"return"             				       yylval=new Node(yytext);return RETURN;
+"if"                 				       yylval=new Node(yytext);return IF;
+"else"               				       yylval=new Node(yytext);return ELSE;
+"while"              				       yylval=new Node(yytext);return WHILE;
+"break"              				       yylval=new Node(yytext);return BREAK;
+"continue"           				       yylval=new Node(yytext);return CONTINUE;
+";"                  				       yylval=new Node(yytext);return SC;
+"("                 				       yylval=new Node(yytext);return LPAREN;
+")"                 				       yylval=new Node(yytext);return RPAREN;
+"{"                 				       yylval=new Node(yytext);return LBRACE;
+"}"                 				       yylval=new Node(yytext);return RBRACE;
+"="                  				       yylval=new Node(yytext);return ASSIGN;
+{relop}              				       yylval=new Node(yytext);return RELOP;
+{binop}              				       yylval=new Node(yytext);return BINOP;
+{num}                                      yylval=new Node(yytext);return NUM;
+{id}                                       yylval=new Node(yytext);return ID;
+{string}                                   yylval=new Node(yytext);return STRING;
 {whitespace}                   		       ;
-    
-    
-{enterComment}       				       { BEGIN(COMMENT); printCommentToken(); }
-<COMMENT>[\r\n]             	           { BEGIN(INITIAL); }
-<COMMENT>.                                 ;
 
-{enterString}        				       { BEGIN(STRING); }
-<STRING>{enterString}  				       { accumulateStringToken(NULL, 0); BEGIN(INITIAL); }
-<STRING>(\n) 		        		       { printf("Error unclosed string\n"); exit(0); }
-<STRING>(\r) 		        		       { printf("Error unclosed string\n"); exit(0); }
+.                                          {output::errorLex(yylineno); exit(0);}
 
-<STRING>{escapeChar}                       { BEGIN(STRING_ESCAPE); }
-<STRING_ESCAPE>[t]                         { accumulateStringToken("\t", 1); BEGIN(STRING); }
-<STRING_ESCAPE>[n]                         { accumulateStringToken("\n", 1); BEGIN(STRING); }
-<STRING_ESCAPE>[r]                         { accumulateStringToken("\r", 1); BEGIN(STRING); }
-<STRING_ESCAPE>["]                         { accumulateStringToken("\"", 1); BEGIN(STRING); }
-<STRING_ESCAPE>[0]                         { accumulateStringToken("\0", 1); BEGIN(STRING); }
-<STRING_ESCAPE>[\\]                        { accumulateStringToken("\\", 1); BEGIN(STRING); }
-<STRING_ESCAPE>{twoDigitsHexNum}           { char toPrint = strtol(&yytext[1], NULL, 16); checkAsciiHexValueRange(toPrint); BEGIN(STRING); }
-<STRING_ESCAPE>x..                         { printf("Error undefined escape sequence %s\n", yytext); exit(0); }
-<STRING_ESCAPE>.                           { printf("Error undefined escape sequence %s\n", yytext); exit(0); }
-
-<STRING>{stringLegalChars}         		   { accumulateStringToken(yytext, yyleng); }
-<STRING>[^"]                               { printf("Error %s\n", yytext); exit(0); }
-
-.                                          { printf("Error %s\n", yytext); exit(0); }
-
-%%
-void printRecognisedToken(const char* whichToken)
-{
-    printf("%d ", yylineno);
-    printf("%s ", whichToken);
-    printf("%s\n", yytext);
-}
-
-void printCommentToken(void)
-{
-    printf("%d ", yylineno);
-    printf("%s ", "COMMENT");
-    printf("//\n");
-}
-
-void accumulateStringToken(const char* toAdd, int toAddLen)
-{
-    static char accumulated[2096] = "";
-    static int currStringLen = 0;
-
-    if(NULL == toAdd)
-    {
-        char acctualToPrint[2096] = "";
-        memcpy(acctualToPrint, accumulated, currStringLen);
-
-        printf("%d ", yylineno);
-        printf("%s ", "STRING");
-        printf("%s\n", acctualToPrint);
-        currStringLen = 0;
-    }
-    else
-    {
-        memcpy(accumulated + currStringLen, toAdd, toAddLen);
-        currStringLen += toAddLen;
-    }
-}
-
-void checkAsciiHexValueRange(char toCheck)
-{
-    if(0x0A == toCheck || 0x0D == toCheck || 0x09 == toCheck || (0x20 <= toCheck && 0x7E >= toCheck))
-    {
-        accumulateStringToken(&toCheck, 1);
-    }
-    else
-    {
-        printf("Error undefined escape sequence %s\n", yytext); 
-        exit(0);
-    }
-}
