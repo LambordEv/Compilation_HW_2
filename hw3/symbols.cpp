@@ -89,7 +89,6 @@ void TableStack::add_function_symbol(const string &name, const string &type, int
 void TableStack::push_scope(bool is_loop, string return_type) {
     SymbolTable* new_scope = new SymbolTable(offsets.back(), is_loop, return_type);
     this->table_stack.push_back(new_scope);
-//    std::cout << "max offset is: " << table_stack.back()->max_offset << "\n";
     SymbolTable* current_scope = table_stack.back();
     offsets.push_back(current_scope->max_offset);
 }
@@ -156,7 +155,6 @@ void TableStack::print_scopes() {
         }
         i++;
     }
-
 }
 
 void TableStack::check_program() {
