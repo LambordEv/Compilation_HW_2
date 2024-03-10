@@ -10,24 +10,18 @@ using std::string;
 using std::vector;
 
 
-string convert_to_upper_case(const string &str);
+string stringToUppercase(const string &str);
 
 class Symbol {
 public:
     string name;
-    // If class is function, this is return type
     string type;
     int offset;
     bool is_function;
-    // param types
-    vector<string> params;
+    string param;
 
-    Symbol(const string name, const string type, int offset, bool is_function, vector<string> params) : name(name),
-                                                                                                        type(type),
-                                                                                                        offset(offset),
-                                                                                                        is_function(
-                                                                                                                is_function),
-                                                                                                        params(params) {}
+    Symbol(const string name, const string type, int offset, bool is_function, string param = string()) : 
+        name(name), type(type), offset(offset), is_function(is_function), param(param) {}
 
     ~Symbol() = default;
 };
@@ -47,7 +41,7 @@ public:
 
     void add_symbol(const Symbol &symbol);
 
-    bool symbol_exists(const string &name);
+    bool isSymbolExists(const string &name);
 
     Symbol *get_symbol(const string &name);
 
@@ -71,11 +65,11 @@ public:
 
     void pop_scope();
 
-    void add_symbol(const string &name, const string &type, bool is_function, vector<string> params = vector<string>());
+    void add_symbol(const string &name, const string &type, bool is_function, string params = string());
 
     void add_function_symbol(const string &name, const string &type, int offset);
 
-    bool symbol_exists(const string &name);
+    bool isSymbolExists(const string &name);
 
     bool check_loop();
 
@@ -86,13 +80,8 @@ public:
     void print_scopes();
 
     void check_program();
-    ~TableStack(){
-        for(auto it = table_stack.begin(); it != table_stack.end(); it++){
-            SymbolTable* current = *it;
-            delete current;
-        }
 
-    }
+    ~TableStack() = default;
 };
 
 #endif

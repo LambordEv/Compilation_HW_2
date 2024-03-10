@@ -65,8 +65,6 @@ Program::Program() {
 
 }
 
-//************STATEMENT****************
-// Statement -> BREAK SC or CONTINUE SC
 Statement::Statement(Node *node) {
     if (node->value == "break") {
         if (!tables.check_loop()) {
@@ -101,18 +99,16 @@ Statement::Statement(Exp *exp, bool is_return) : Node() {
     }
 }
 
-// Statement -> Type ID SC
 Statement::Statement(Type *type, Node *id) : Node() {
-    if (tables.symbol_exists(id->value)) {
+    if (tables.isSymbolExists(id->value)) {
         output::errorDef(yylineno, id->value);
         exit(0);
     }
     tables.add_symbol(id->value, type->type, false);
-    value = type->value;//
-
+    value = type->value;
 }
 
-static bool check_types_compatible(string type1, string type2) {
+static bool isMismatch(string type1, string type2) {
     if (type1 == type2)
         return true;
 
@@ -121,14 +117,13 @@ static bool check_types_compatible(string type1, string type2) {
     return true;
 }
 
-// Statement -> Type ID ASSIGN Exp SC or Statement -> AUTO ID ASSIGN Exp SC
 Statement::Statement(Type *type, Node *id, Exp *exp) : Node() {
-    if (tables.symbol_exists(id->value)) {
+    if (tables.isSymbolExists(id->value)) {
         output::errorDef(yylineno, id->value);
         exit(0);
     }
     if (type) {
-        if (!check_types_compatible(type->type, exp->type)) {
+        if (!isMismatch(type->type, exp->type)) {
             output::errorMismatch(yylineno);
             exit(0);
         }
@@ -142,23 +137,17 @@ Statement::Statement(Type *type, Node *id, Exp *exp) : Node() {
             output::errorMismatch(yylineno);
             exit(0);
         }
-        // For Bool expressions
-//        if (!check_types_compatible(type->type, exp->type)) {
-//            output::errorMismatch(yylineno);
-//            exit(0);
-//        }
         tables.add_symbol(id->value, exp->type, false);
     }
 }
 
-// Statement -> ID ASSIGN Exp SC
 Statement::Statement(Node *id, Exp *exp) : Node() {
-    if (!tables.symbol_exists(id->value)) {
+    if (!tables.isSymbolExists(id->value)) {
         output::errorUndef(yylineno, id->value);
         exit(0);
     }
     Symbol *symbol = tables.get_symbol(id->value);
-    if (symbol->is_function || !check_types_compatible(symbol->type, exp->type)) {
+    if (symbol->is_function || !isMismatch(symbol->type, exp->type)) {
         output::errorMismatch(yylineno);
         exit(0);
     }
@@ -168,9 +157,8 @@ Statement::Statement(Node *id, Exp *exp) : Node() {
     }
 }
 
-// Statement -> Call SC
 Statement::Statement(Call *call) : Node() {
-    if (!tables.symbol_exists(call->value)) {
+    if (!tables.isSymbolExists(call->value)) {
         output::errorUndefFunc(yylineno, call->value);
         exit(0);
     }
@@ -192,12 +180,9 @@ Type::Type(const string type) : Node(), type(type) {
 
 }
 
-// ***************EXP******************
-// Exp -> LPAREN Exp RPAREN
 Exp::Exp(Exp *exp) : Node(exp->value), type(exp->type) {
 }
 
-// Exp -> CONST(bool, num, byte, string)
 Exp::Exp(Node *terminal, string
 type) : Node(terminal->value), type(type) {
     if (type == "byte") {
@@ -209,9 +194,8 @@ type) : Node(terminal->value), type(type) {
     }
 }
 
-//Exp -> ID, Call
 Exp::Exp(bool is_var, Node *terminal) : Node(), is_var(is_var) {
-    if (is_var && !tables.symbol_exists(terminal->value)) {
+    if (is_var && (!tables.isSymbolExists(terminal->value) || (terminal->value == "readi" || terminal->value == "printi" || terminal->value == "print"))) {
         output::errorUndef(yylineno, terminal->value);
         exit(0);
     }
@@ -225,23 +209,23 @@ Exp::Exp(Node *terminal1, Node *terminal2,
          const string type) {
     Exp *exp1 = dynamic_cast<Exp *>(terminal1);
     Exp *exp2 = dynamic_cast<Exp *>(terminal2);
-    if (exp1->is_var && !tables.symbol_exists(exp1->value)) {
+    if (exp1->is_var && !tables.isSymbolExists(exp1->value)) {
         output::errorUndef(yylineno, terminal1->value);
         exit(0);
     }
 
-    if (exp2->is_var && !tables.symbol_exists(exp2->value)) {
+    if (exp2->is_var && !tables.isSymbolExists(exp2->value)) {
         output::errorUndef(yylineno, terminal2->value);
         exit(0);
     }
 
-    if (!check_types_compatible(exp1->type, exp2->type)) {
+    if (!isMismatch(exp1->type, exp2->type)) {
         output::errorMismatch(yylineno);
         exit(0);
     }
 
     if (type == "bool") {
-//        bool t1, t2, res;
+
         if (exp1->type != "bool" || exp2->type != "bool") {
             output::errorMismatch(yylineno);
             exit(0);
@@ -261,7 +245,7 @@ Exp::Exp(Node *terminal1, Node *terminal2,
             this->type = "byte";
         }
     } else if (type == "relop") {
-        if (!check_types_compatible(exp1->type, exp2->type)) {
+        if (!isMismatch(exp1->type, exp2->type)) {
             output::errorMismatch(yylineno);
             exit(0);
         }
@@ -273,12 +257,11 @@ Exp::Exp(Node *terminal1, Node *terminal2,
     }
 }
 
-// Exp -> LPAREN Type RPAREN Exp
 Exp::Exp(Node *exp, Node *type) {
     Exp *converted_exp = dynamic_cast<Exp *>(exp);
     Type *converted_type = dynamic_cast<Type *>(type);
 
-    if (!check_types_compatible(converted_exp->type, converted_type->type)) {
+    if (!isMismatch(converted_exp->type, converted_type->type)) {
         output::errorMismatch(yylineno);
         exit(0);
     }
@@ -287,12 +270,10 @@ Exp::Exp(Node *exp, Node *type) {
     this->type = converted_type->type;
 }
 
-
-// Call -> ID LPAREN Exp RPAREN
 Call::Call(Node *terminal, Node *exp) : Node() {
     Exp *expression = dynamic_cast<Exp *>(exp);
     string name = terminal->value;
-    if (!tables.symbol_exists(name)) {
+    if (!tables.isSymbolExists(name)) {
         output::errorUndefFunc(yylineno, name);
         exit(0);
     }
@@ -301,16 +282,10 @@ Call::Call(Node *terminal, Node *exp) : Node() {
         output::errorUndefFunc(yylineno, name);
         exit(0);
     }
-    for (int i = 0; i < symbol->params.size(); i++) {
-        if (symbol->params[i] != expression->type) {
-            if (symbol->params[i] != "int" || expression->type != "byte") {
-                /*vector<string> converted_params = vector<string>();
-                for (int j = 0; j < symbol->params.size(); ++j) {
-                    converted_params.push_back(convert_to_upper_case(symbol->params[j]));
-                }*/
-                output::errorPrototypeMismatch(yylineno, name, "byte");
-                exit(0);
-            }
+    if (symbol->param != expression->type) {
+        if (symbol->param != "int" || expression->type != "byte") {
+            output::errorPrototypeMismatch(yylineno, name, stringToUppercase(symbol->param));
+            exit(0);
         }
     }
     type = symbol->type;

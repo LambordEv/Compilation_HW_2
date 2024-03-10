@@ -54,7 +54,7 @@ enterComment        				       "\/\/"
 {num}                                      yylval=new Node(yytext);return NUM;
 {id}                                       yylval=new Node(yytext);return ID;
 {string}                                   yylval=new Node(yytext);return STRING;
+{enterComment}(.*)[\n\r]                   ;
 {whitespace}                   		       ;
 
 .                                          {output::errorLex(yylineno); exit(0);}
-
