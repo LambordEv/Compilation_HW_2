@@ -37,6 +37,7 @@ TableStack::TableStack() : table_stack(), offsets() {
     push_scope(false);
     add_symbol("print", "void", true, {"string"});
     add_symbol("printi", "void", true, {"int"});
+    add_symbol("readi", "int", true, {"int"});
 }
 
 bool TableStack::symbol_exists(const string &name) {
@@ -135,7 +136,7 @@ void TableStack::pop_scope() {
                 converted_params.push_back(convert_to_upper_case((*it)->params[i]));
             }
             std::string paramsString = concatenateParams(converted_params);
-            output::printID((*it)->name, 0, output::makeFunctionType(convert_to_upper_case((*it)->type), paramsString));
+            output::printID((*it)->name, 0, output::makeFunctionType(paramsString, convert_to_upper_case((*it)->type)));
         } else {
             output::printID((*it)->name, (*it)->offset, convert_to_upper_case((*it)->type));
         }
@@ -164,6 +165,7 @@ void TableStack::check_program() {
         if (main_symbol->type == "void") {
             if (main_symbol->params.size() == 0) {
                 tables.pop_scope();
+                //tables.pop_scope();
                 return;
             }
         }

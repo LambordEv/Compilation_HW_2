@@ -26,15 +26,6 @@ string                                     (\"([^\n\r\"\\]|\\[rnt"\\])+\")
 %x COMMENT		       
 enterComment        				       "\/\/"
     
-%x STRING				       
-enterString         				       \"
-stringLegalChars            		       ([\x20-\x7e\x09\x0a\x0d]{-}["\n\r\\])
-stringIlegalChars                          ([^ ]{-}{stringLegalChars})
-    
-%x STRING_ESCAPE       
-escapeChar                                 "\\"
-twoDigitsHexNum                            (x([0-9a-fA-F]{2}))
-    
 %%		       
 "void"               				       yylval=new Node(yytext);return VOID;
 "int"                				       yylval=new Node(yytext);return INT;
