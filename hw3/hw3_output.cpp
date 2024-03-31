@@ -5,7 +5,7 @@
 
 using std::vector;
 using namespace std;
-extern TableStack tables;
+extern TableStack mainStack;
 extern int yylineno;
 
 void output::endScope(){
@@ -67,12 +67,12 @@ Program::Program() {
 
 Statement::Statement(Node *node) {
     if (node->value == "break") {
-        if (!tables.check_loop()) {
+        if (!mainStack.isLoop()) {
             output::errorUnexpectedBreak(yylineno);
             exit(0);
         }
     } else if (node->value == "continue") {
-        if (!tables.check_loop()) {
+        if (!mainStack.isLoop()) {
             output::errorUnexpectedContinue(yylineno);
             exit(0);
         }
@@ -80,7 +80,7 @@ Statement::Statement(Node *node) {
 }
 
 Statement::Statement(Exp *exp, bool is_return) : Node() {
-    SymbolTable *scope = tables.current_scope();
+    SymbolTable *scope = mainStack.current_scope();
     string *return_type = scope->return_type;
 
     if (*return_type != "" && *return_type != exp->type) {
@@ -91,7 +91,7 @@ Statement::Statement(Exp *exp, bool is_return) : Node() {
 
     }
     if (exp->is_var) {
-        Symbol *symbol = tables.get_symbol(exp->value);
+        Symbol *symbol = mainStack.getSymbol(exp->value);
         if (symbol->is_function) {
             output::errorUndef(yylineno, symbol->name);
             exit(0);
@@ -100,11 +100,11 @@ Statement::Statement(Exp *exp, bool is_return) : Node() {
 }
 
 Statement::Statement(Type *type, Node *id) : Node() {
-    if (tables.isSymbolExists(id->value)) {
+    if (mainStack.isSymbolExists(id->value)) {
         output::errorDef(yylineno, id->value);
         exit(0);
     }
-    tables.add_symbol(id->value, type->type, false);
+    mainStack.addSymbolToStack(id->value, type->type, false);
     value = type->value;
 }
 
@@ -118,7 +118,7 @@ static bool isMismatch(string type1, string type2) {
 }
 
 Statement::Statement(Type *type, Node *id, Exp *exp) : Node() {
-    if (tables.isSymbolExists(id->value)) {
+    if (mainStack.isSymbolExists(id->value)) {
         output::errorDef(yylineno, id->value);
         exit(0);
     }
@@ -131,22 +131,22 @@ Statement::Statement(Type *type, Node *id, Exp *exp) : Node() {
             output::errorMismatch(yylineno);
             exit(0);
         }
-        tables.add_symbol(id->value, type->type, false);
+        mainStack.addSymbolToStack(id->value, type->type, false);
     } else {
         if (exp->type == "void" || exp->type == "string") {
             output::errorMismatch(yylineno);
             exit(0);
         }
-        tables.add_symbol(id->value, exp->type, false);
+        mainStack.addSymbolToStack(id->value, exp->type, false);
     }
 }
 
 Statement::Statement(Node *id, Exp *exp) : Node() {
-    if (!tables.isSymbolExists(id->value)) {
+    if (!mainStack.isSymbolExists(id->value)) {
         output::errorUndef(yylineno, id->value);
         exit(0);
     }
-    Symbol *symbol = tables.get_symbol(id->value);
+    Symbol *symbol = mainStack.getSymbol(id->value);
     if (symbol->is_function || !isMismatch(symbol->type, exp->type)) {
         output::errorMismatch(yylineno);
         exit(0);
@@ -158,11 +158,11 @@ Statement::Statement(Node *id, Exp *exp) : Node() {
 }
 
 Statement::Statement(Call *call) : Node() {
-    if (!tables.isSymbolExists(call->value)) {
+    if (!mainStack.isSymbolExists(call->value)) {
         output::errorUndefFunc(yylineno, call->value);
         exit(0);
     }
-    Symbol *symbol = tables.get_symbol(call->value);
+    Symbol *symbol = mainStack.getSymbol(call->value);
     if (!symbol->is_function) {
         output::errorUndefFunc(yylineno, call->value);
         exit(0);
@@ -195,11 +195,11 @@ type) : Node(terminal->value), type(type) {
 }
 
 Exp::Exp(bool is_var, Node *terminal) : Node(), is_var(is_var) {
-    if (is_var && (!tables.isSymbolExists(terminal->value) || (terminal->value == "readi" || terminal->value == "printi" || terminal->value == "print"))) {
+    if (is_var && (!mainStack.isSymbolExists(terminal->value) || (terminal->value == "readi" || terminal->value == "printi" || terminal->value == "print"))) {
         output::errorUndef(yylineno, terminal->value);
         exit(0);
     }
-    Symbol *symbol = tables.get_symbol(terminal->value);
+    Symbol *symbol = mainStack.getSymbol(terminal->value);
     value = terminal->value;
     type = symbol->type;
 }
@@ -209,12 +209,12 @@ Exp::Exp(Node *terminal1, Node *terminal2,
          const string type) {
     Exp *exp1 = dynamic_cast<Exp *>(terminal1);
     Exp *exp2 = dynamic_cast<Exp *>(terminal2);
-    if (exp1->is_var && !tables.isSymbolExists(exp1->value)) {
+    if (exp1->is_var && !mainStack.isSymbolExists(exp1->value)) {
         output::errorUndef(yylineno, terminal1->value);
         exit(0);
     }
 
-    if (exp2->is_var && !tables.isSymbolExists(exp2->value)) {
+    if (exp2->is_var && !mainStack.isSymbolExists(exp2->value)) {
         output::errorUndef(yylineno, terminal2->value);
         exit(0);
     }
@@ -273,11 +273,11 @@ Exp::Exp(Node *exp, Node *type) {
 Call::Call(Node *terminal, Node *exp) : Node() {
     Exp *expression = dynamic_cast<Exp *>(exp);
     string name = terminal->value;
-    if (!tables.isSymbolExists(name)) {
+    if (!mainStack.isSymbolExists(name)) {
         output::errorUndefFunc(yylineno, name);
         exit(0);
     }
-    Symbol *symbol = tables.get_symbol(name);
+    Symbol *symbol = mainStack.getSymbol(name);
     if (!symbol->is_function) {
         output::errorUndefFunc(yylineno, name);
         exit(0);

@@ -39,11 +39,11 @@ public:
         this->return_type = new string(return_type);
     }
 
-    void add_symbol(const Symbol &symbol);
+    void addSymbolToTable(const Symbol &symbol);
 
     bool isSymbolExists(const string &name);
 
-    Symbol *get_symbol(const string &name);
+    Symbol *getSymbol(const string &name);
 
     ~SymbolTable(){
         delete return_type;
@@ -65,21 +65,15 @@ public:
 
     void pop_scope();
 
-    void add_symbol(const string &name, const string &type, bool is_function, string params = string());
-
-    void add_function_symbol(const string &name, const string &type, int offset);
+    void addSymbolToStack(const string &name, const string &type, bool is_function, string params = string());
 
     bool isSymbolExists(const string &name);
 
-    bool check_loop();
+    bool isLoop();
 
-    Symbol *get_symbol(const string &name);
+    Symbol *getSymbol(const string &name);
 
-    void insert_symbol(SymbolTable &table, Symbol &symbol);
-
-    void print_scopes();
-
-    void check_program();
+    void main();
 
     ~TableStack() = default;
 };

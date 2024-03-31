@@ -6,10 +6,10 @@
 #include <iterator>
 #include <ctype.h>
 
-extern TableStack tables;
+extern TableStack mainStack;
 
 
-void SymbolTable::add_symbol(const Symbol &symbol) {
+void SymbolTable::addSymbolToTable(const Symbol &symbol) {
     symbols.push_back(new Symbol(symbol));
     if (symbol.offset >= 0)
         max_offset = symbol.offset;
@@ -26,7 +26,7 @@ bool SymbolTable::isSymbolExists(const string &name) {
 }
 
 
-Symbol *SymbolTable::get_symbol(const string &name) {
+Symbol *SymbolTable::getSymbol(const string &name) {
     for (auto it = symbols.begin(); it != symbols.end(); ++it) {
         if ((*it)->name == name)
             return (*it);
@@ -37,9 +37,9 @@ Symbol *SymbolTable::get_symbol(const string &name) {
 TableStack::TableStack() : table_stack(), offsets() {
     offsets.push_back(0);
     push_scope(false);
-    add_symbol("print", "void", true, {"string"});
-    add_symbol("printi", "void", true, {"int"});
-    add_symbol("readi", "int", true, {"int"});
+    addSymbolToStack("print", "void", true, {"string"});
+    addSymbolToStack("printi", "void", true, {"int"});
+    addSymbolToStack("readi", "int", true, {"int"});
 }
 
 bool TableStack::isSymbolExists(const string &name) {
@@ -51,7 +51,7 @@ bool TableStack::isSymbolExists(const string &name) {
     return false;
 }
 
-bool TableStack::check_loop() {
+bool TableStack::isLoop() {
     for (auto it = table_stack.rbegin(); it != table_stack.rend(); ++it) {
         SymbolTable *current = *it;
         if (current->is_loop)
@@ -59,27 +59,27 @@ bool TableStack::check_loop() {
     }
     return false;
 }
-Symbol *TableStack::get_symbol(const string &name) {
+
+Symbol *TableStack::getSymbol(const string &name) {
     for (auto it = table_stack.begin(); it != table_stack.end(); ++it) {
-        Symbol *symbol = (*it)->get_symbol(name);
+        Symbol *symbol = (*it)->getSymbol(name);
         if (symbol)
             return symbol;
     }
     return nullptr;
 }
 
-void TableStack::add_symbol(const string &name, const string &type, bool is_function, string param) {
+void TableStack::addSymbolToStack(const string &name, const string &type, bool is_function, string param) {
     SymbolTable *current_scope = table_stack.back();
-    int offset;
+    int order;
     if (is_function) {
-        offset = 0;
+        order = 0;
     } else {
-        offset = offsets.back();
-        offsets.push_back(offset + 1);
+        order = offsets.back();
+        offsets.push_back(order + 1);
     }
-
-    Symbol symbol = Symbol(name, type, offset, is_function, param);
-    current_scope->add_symbol(symbol);
+    Symbol symbol = Symbol(name, type, order, is_function, param);
+    current_scope->addSymbolToTable(symbol);
 }
 
 void TableStack::push_scope(bool is_loop, string return_type) {
@@ -106,7 +106,6 @@ void TableStack::pop_scope() {
     table_stack.pop_back();
     output::endScope();
     for (auto it = scope->symbols.begin(); it != scope->symbols.end(); ++it) {
-        auto offset = offsets.back();
         offsets.pop_back();
         if ((*it)->is_function) {
             output::printID((*it)->name, 0, output::makeFunctionType(stringToUppercase((*it)->param), stringToUppercase((*it)->type)));
@@ -114,18 +113,17 @@ void TableStack::pop_scope() {
             output::printID((*it)->name, (*it)->offset, stringToUppercase((*it)->type));
         }
     }
-    
     if(offsets.size() > 0)
         offsets.pop_back();
 }
 
-void TableStack::check_program() {
-    SymbolTable *main_scope = tables.table_stack.front();
-    if (main_scope->isSymbolExists("main")) {
-        Symbol *main_symbol = main_scope->get_symbol("main");
-        if (main_symbol->type == "void") {
-            if (main_symbol->param == string()) {
-                tables.pop_scope();
+void TableStack::main() {
+    SymbolTable *firstScope = mainStack.table_stack.front();
+    if (firstScope->isSymbolExists("main")) {
+        Symbol *sym = firstScope->getSymbol("main");
+        if (sym->type == "void") {
+            if (sym->param == string()) {
+                mainStack.pop_scope();
                 return;
             }
         }
